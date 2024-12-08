@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "cracker"
+version = "0.0.1"
+description = "Cracker is a simple, fast, and plain task runner. Designed with the idea of supporting as many task tools as possible."
+authors = ["Lloyd Bond <lloyd.bond@gmail.com>"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
+packages = [{include = "stopwatch", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+textual = "^0.89.1"
+toml = "^0.10.2"
+
+[tool.poetry.scripts]
+ck = 'main.py:main'
+
+[tool.poetry.group.dev.dependencies]
+textual-dev = "^1.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
