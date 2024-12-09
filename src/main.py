@@ -1,3 +1,4 @@
+from typing import List
 from main_window.mainwindow import MainWindow
 from args.parser import Parser
 
@@ -9,18 +10,22 @@ DESCRIPTION = parsed_toml["description"]
 NAME = parsed_toml["name"]
 
 
-def main():
+def main() -> None:
     args = Parser.get_args()
     if args.version:
         print(VERSION)
         exit(0)
+    files: List[str] = args.files
+    if len(files) <= 0:
+        files += find_task_runners()
 
-    if len(args.files) <= 0:
-        exit(0)
-
-    app = MainWindow()
+    app = MainWindow(files)
     app.run()
 
 
 if __name__ == "__main__":
     main()
+
+
+def find_task_runners() -> List[str]:
+    return ["Makefile"]

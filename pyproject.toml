@@ -8,9 +8,11 @@ readme = "README.md"
 packages = [{include = "stopwatch", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "^3.12"
 textual = "^0.89.1"
 toml = "^0.10.2"
+hat-peg = "^0.5.9"
+mypy = "^1.13.0"
 
 [tool.poetry.scripts]
 ck = 'main.py:main'
