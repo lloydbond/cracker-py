@@ -1,30 +1,35 @@
-
-MainWindow {   
-    background: $boost;
-    height: 5;
-    margin: 1;
-    min-width: 50;
-    padding: 1;
+MainWindow #tasks {
+    width: 29;
+}
+ActionLabel {
+    border: solid $text-accent;
+    color: $text-primary;
+    min-width: 10;
 }
 
-TaskGroup Label {
-    color: $primary;
-    padding: 1;
-    width: 10;
+Task {
+    border: blank;
+    color: $text-secondary;
+    min-width: 15;
+    min-height: 1;
 }
 
-TaskGroup {
-    width: 30;
-    text-align: center;
-
+Task:hover {
+    border:  solid $text-accent;
+}
+Task:focus {
+    border:  solid $text-primary;
+}
+Button {
+	color: blue;
 }
 
-TaskGroup ListView {
-    border: solid $secondary;
+#stop {
+    dock: left;
+    display: none;
 }
 
-TaskGroup #target {   
-    width: 16;
-    text-align: center;
-    color: $foreground-muted;
+#start {
+    dock: left;
+    display: none;
 }

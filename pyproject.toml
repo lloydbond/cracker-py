@@ -9,7 +9,7 @@ packages = [{include = "stopwatch", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
-textual = "^0.89.1"
+textual = "^1.0.0"
 toml = "^0.10.2"
 hat-peg = "^0.5.9"
 mypy = "^1.13.0"

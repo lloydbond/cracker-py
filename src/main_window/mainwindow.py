@@ -2,10 +2,9 @@ from typing import List, Dict
 
 from textual.app import App, ComposeResult
 from textual.containers import HorizontalGroup, VerticalScroll
-from textual.reactive import reactive
-from textual.widgets import Button, Footer, Header
+from textual.widgets import RichLog, Footer, Header
 
-from main_window.taskgroup import TaskGroup
+from main_window.taskgroup import TaskGroup, Task
 from parsers.makefile import Makefile
 
 
@@ -14,7 +13,7 @@ class MainWindow(App):
 
     CSS_PATH = "app.tcss"
     BINDINGS = [
-        ("q", "quit_app", "quit"),
+        ("q", "app.quit", "quit"),
         ("d", "toggle_dark", "Toggle dark mode"),
     ]
     _targets: Dict[str, List[str]]
@@ -23,6 +22,7 @@ class MainWindow(App):
         """The main window layout. Provide a list of task runner files"""
 
         self._targets = {file: Makefile().targets(file) for file in files}
+        self.output = RichLog(highlight=True, markup=False, max_lines=1_000)
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -33,15 +33,22 @@ class MainWindow(App):
         yield HorizontalGroup(
             VerticalScroll(
                 *[TaskGroup(file, targets) for file, targets in self._targets.items()],
-                id="tasks"
+                id="tasks",
             ),
-            VerticalScroll(id="stdoutput"),
+            VerticalScroll(self.output, id="stdoutput"),
         )
 
-    def action_quit_app(self) -> None:
-        """Quit the app"""
+    def on_ready(self) -> None:
+        self.output.write("stdout ready...\n\n")
 
-        self.app.exit()
+    def on_task_stdout(self, message: Task.Stdout) -> None:
+        # text_log = self.query_one(RichLog)
+        self.output.write(message.output)
+
+    # def action_quit_app(self) -> None:
+    #     """Quit the app"""
+
+    #     self.app.exit()
 
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
