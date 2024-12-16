@@ -56,15 +56,21 @@ class Makefile(IRunner):
     def start(self) -> None:
         if self.target.state == State.STOPPED:
             self.target.process = Popen(
-                [self.target.runner, self.target.target], stdout=PIPE, text=True
+                [self.target.runner, self.target.target],
+                bufsize=1,
+                stdout=PIPE,
+                # stderr=STDOUT,
+                text=True,
             )
             self.target.state = State.STARTED
-            self._stdout, self._stderr = self.target.process.communicate()
+            self._stdout = self.target.process.stdout
             self.target.state = State.RUNNING
         print(f"started {self.target.runner} {self.target.target}")
 
     def stop(self) -> None:
         self.target.state = State.STOPPED
+        if self._stdout is not None:
+            self._stdout.close()
         print(f"stopped {self.target.runner} {self.target.target}")
 
     def state(self) -> State:

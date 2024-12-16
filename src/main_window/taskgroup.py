@@ -1,12 +1,14 @@
 from typing import List
 
-from textual import on
+from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import HorizontalGroup
 from textual.message import Message
 from textual.widgets import ListItem, ListView, Button
+from textual.worker import Worker
 
 from runner.runner import IRunner, Factory, State, Type
+import asyncio
 
 
 class ActionLabel(Button):
@@ -23,7 +25,7 @@ class Task(Button):
         """stdout pipe output update"""
 
         def __init__(self, output: str) -> None:
-            self.output = output
+            self.output: str = output
             super().__init__()
 
     def __init__(self, name: str) -> None:
@@ -32,20 +34,24 @@ class Task(Button):
         super().__init__(name, id=f"task-{name}")
 
     async def update_output(self) -> None:
-        line = ""
-        for char in self.t.stdout:
-            if self.t.state() == State.STOPPED:
+        print("in run_worker update_output()")
+        cnt = 1
+        for line in iter(self.t.stdout.readline, ""):
+            self.post_message(self.Stdout(line[:-1]))
+            if cnt % 10 == 0:
+                print("Hello world 0")
+            if self.t.state() == State.STOPPED or cnt > 100_000:
                 break
+            cnt += 1
+        print("hello world 1")
 
-            if char == "\n":
-                self.post_message(self.Stdout(line))
-                line = ""
-                continue
-            line += char
-        self.post_message(self.Stdout(line))
+    async def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
+        """Called when the worker state changes."""
+        print("worker state changed")
+        self.log(event)
 
     @on(Button.Pressed, "Task")
-    def task_pressed(self, event: Button.Pressed) -> None:
+    async def task_pressed(self, event: Button.Pressed) -> None:
         """Task start"""
 
         assert event.button.id is not None
@@ -53,12 +59,19 @@ class Task(Button):
         if self.t.state() == State.STOPPED:
             self.t.start()
             print(f"start task {task}")
-            self.run_worker(
-                self.update_output(), start=True, thread=True, exclusive=True
+            self.wok = self.run_worker(
+                self.update_output(),
+                name=f"task {task}",
+                group="makefile",
+                start=True,
+                thread=True,
+                exclusive=True,
             )
+            print(f"worker started: {self.wok.is_running}")
         else:
             print(f"stop task {task}")
             self.t.stop()
+            self.wok.cancel()
             self.post_message(self.Stdout(f"stop task {task}"))
 
 
@@ -78,6 +91,3 @@ class TaskGroup(HorizontalGroup):
         # yield Label(self.name)
         yield ActionLabel(self.name)
         yield ListView(*self.targets)
-
-    def start_pressed(self) -> None:
-        """Start task"""
