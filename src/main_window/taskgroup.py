@@ -1,14 +1,14 @@
 from typing import List
+import asyncio
 
-from textual import on, work
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import HorizontalGroup
 from textual.message import Message
 from textual.widgets import ListItem, ListView, Button
 from textual.worker import Worker
 
-from runner.runner import IRunner, Factory, State, Type
-import asyncio
+from runner.runner import Factory, State, Type
 
 
 class ActionLabel(Button):
@@ -30,24 +30,62 @@ class Task(Button):
 
     def __init__(self, name: str) -> None:
         print(f"create task-{name}")
-        self.t: IRunner = Factory(name, Type.MAKEFILE)
+        self.target = name
+        self.state = State.STOPPED
+        # self.proc: IRunner = Factory(name, Type.MAKEFILE)
         super().__init__(name, id=f"task-{name}")
 
-    async def update_output(self) -> None:
-        print("in run_worker update_output()")
-        cnt = 1
-        for line in iter(self.t.stdout.readline, ""):
-            self.post_message(self.Stdout(line[:-1]))
-            if cnt % 10 == 0:
-                print("Hello world 0")
-            if self.t.state() == State.STOPPED or cnt > 100_000:
-                break
-            cnt += 1
-        print("hello world 1")
+    async def update_async(self):
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logging.basicConfig(
+            filename="stream2.log", encoding="utf-8", level=logging.DEBUG
+        )
+
+        async def yield_if(stdin):
+            import signal
+
+            while not self.state == State.STOPPED:
+                await asyncio.sleep(0.05)
+            stdin.write(signal.SIGTERM)
+            return None
+
+        async def yield_stdout(stdout):
+            return await stdout.readline()
+
+        async with Factory(self.target, Type.MAKEFILE) as proc:
+
+            self.state = State.STARTED
+            t1 = asyncio.create_task(yield_if(proc.stdin))
+            while True:
+                t2 = asyncio.create_task(yield_stdout(proc.stdout))
+
+                done, _ = await asyncio.wait(
+                    [t1, t2],
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                logger.debug(self.state)
+                data = ""
+                for task in done:
+                    print(task)
+                    if task.exception() is not None:
+                        data = None
+                        break
+                    else:
+                        data = await task
+                if data == b"":
+                    self.state = State.STOPPED
+                elif data is None:
+                    # t2.cancel()
+                    # t1.cancel()
+                    break
+                line = data.decode().rstrip()
+                self.app.post_message(self.Stdout(line))
+                logger.debug(line)
 
     async def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Called when the worker state changes."""
-        print("worker state changed")
         self.log(event)
 
     @on(Button.Pressed, "Task")
@@ -56,13 +94,12 @@ class Task(Button):
 
         assert event.button.id is not None
         task = event.button.id.partition("-")[-1]
-        if self.t.state() == State.STOPPED:
-            self.t.start()
+        if self.state == State.STOPPED:
             print(f"start task {task}")
-            self.wok = self.run_worker(
-                self.update_output(),
+            self.wok = self.app.run_worker(
+                self.update_async,
                 name=f"task {task}",
-                group="makefile",
+                group=self.target,
                 start=True,
                 thread=True,
                 exclusive=True,
@@ -70,8 +107,7 @@ class Task(Button):
             print(f"worker started: {self.wok.is_running}")
         else:
             print(f"stop task {task}")
-            self.t.stop()
-            self.wok.cancel()
+            self.state = State.STOPPED
             self.post_message(self.Stdout(f"stop task {task}"))
 
 

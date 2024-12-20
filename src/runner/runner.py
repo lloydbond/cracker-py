@@ -1,8 +1,18 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
+import asyncio
+import psutil
+import signal
 
-from subprocess import Popen, PIPE
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename="stream2.log", encoding="utf-8", level=logging.DEBUG)
+
+
+class Type(Enum):
+    MAKEFILE = auto()
 
 
 class State(Enum):
@@ -13,10 +23,16 @@ class State(Enum):
 
 @dataclass
 class Target:
+    type: Type
+    target: str
+
+
+@dataclass
+class Command:
     state: State
     runner: str
     target: str
-    process: Popen | None
+    process: asyncio.subprocess.Process | None
 
 
 class IRunner(ABC):
@@ -26,59 +42,78 @@ class IRunner(ABC):
         pass
 
     @abstractmethod
-    def start(self) -> None:
+    async def __aenter__(self):
         pass
 
-    @abstractmethod
-    def stop(self) -> None:
+    async def __aexit__(self, *args):
         pass
 
-    @abstractmethod
-    def state(self) -> State:
-        pass
+    # @abstractmethod
+    # async def start(self) -> None:
+    #     pass
 
-    @property
-    @abstractmethod
-    def stdout(self):
-        pass
+    # @abstractmethod
+    # async def stop(self) -> int:
+    #     pass
 
+    # @property
+    # @abstractmethod
+    # def state(self) -> State:
+    #     pass
 
-class Type(Enum):
-    MAKEFILE = auto()
+    # @property
+    # @abstractmethod
+    # def stdout(self):
+    #     pass
+
+    # @abstractmethod
+    # async def wait(self) -> int | None:
+    #     pass
 
 
 class Makefile(IRunner):
+
     def __init__(self, target: str) -> None:
-        self.target: Target = Target(
+        self.command: Command = Command(
             state=State.STOPPED, runner="make", target=target, process=None
         )
 
-    def start(self) -> None:
-        if self.target.state == State.STOPPED:
-            self.target.process = Popen(
-                [self.target.runner, self.target.target],
-                bufsize=1,
-                stdout=PIPE,
-                # stderr=STDOUT,
-                text=True,
-            )
-            self.target.state = State.STARTED
-            self._stdout = self.target.process.stdout
-            self.target.state = State.RUNNING
-        print(f"started {self.target.runner} {self.target.target}")
+    async def __aenter__(self):
+        import os
 
-    def stop(self) -> None:
-        self.target.state = State.STOPPED
-        if self._stdout is not None:
-            self._stdout.close()
-        print(f"stopped {self.target.runner} {self.target.target}")
+        print("with __enter__")
+        print(f"{self.command.runner} {self.command.target}")
+        self.command.process = await asyncio.create_subprocess_exec(
+            self.command.runner,
+            self.command.target,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            stdin=asyncio.subprocess.PIPE,
+            env=dict(os.environ, PYTHONUNBUFFERED="1"),
+        )
+        self.command.state = State.RUNNING
+        print(f"started {self.command.runner} {self.command.target}")
+        return self.command.process
 
-    def state(self) -> State:
-        return self.target.state
+    async def __aexit__(self, *args):
 
-    @property
-    def stdout(self):
-        return self._stdout
+        print(f"with __exit__ {self.command.process.returncode}")
+        # self.target.process.stdin.write(signal.SIGTERM)
+        if self.command.process.returncode is None:
+
+            while psutil.pid_exists(self.command.process.pid):
+                print("kill terminate wait")
+                await asyncio.sleep(1.0)
+                self.command.process.kill()
+
+        retcode = await self.command.process.wait()
+        print(f"stopped {self.command.runner} {self.command.target}")
+        return retcode
+
+    def cancel(self):
+        if not self.command.process.returncode:
+            print("kill terminate wait")
+            self.command.process.stdin.write(signal.SIGTERM)
 
 
 def Factory(target: str, runner: Type = Type.MAKEFILE):
