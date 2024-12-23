@@ -43,46 +43,53 @@ class Task(Button):
             filename="stream2.log", encoding="utf-8", level=logging.DEBUG
         )
 
-        async def yield_if(stdin):
+        async def wait_me(stdin):
             import signal
 
             while not self.state == State.STOPPED:
                 await asyncio.sleep(0.05)
-            stdin.write(signal.SIGTERM)
-            return None
+            stdin.write(signal.SIGKILL)
+            await stdin.drain()
+            return b""
 
         async def yield_stdout(stdout):
-            return await stdout.readline()
+            line = ""
+            try:
+                line = await stdout.readline()
+            except Exception as e:
+                print(f"exception type is {type(e)}")
+                print("Task Runner process cancelled mid stream.")
+
+            return line
 
         async with Factory(self.target, Type.MAKEFILE) as proc:
-
             self.state = State.STARTED
-            t1 = asyncio.create_task(yield_if(proc.stdin))
+            waiter = asyncio.create_task(wait_me(proc.stdin), name="WAITER")
+            r = None
             while True:
-                t2 = asyncio.create_task(yield_stdout(proc.stdout))
-
+                r = asyncio.create_task(yield_stdout(proc.stdout), name="STDOUT")
                 done, _ = await asyncio.wait(
-                    [t1, t2],
+                    [r, waiter],
                     return_when=asyncio.FIRST_COMPLETED,
                 )
-                logger.debug(self.state)
-                data = ""
                 for task in done:
-                    print(task)
                     if task.exception() is not None:
-                        data = None
+                        data = b""
+                        r.cancel()
                         break
-                    else:
-                        data = await task
+
+                    data = await task
                 if data == b"":
-                    self.state = State.STOPPED
-                elif data is None:
-                    # t2.cancel()
-                    # t1.cancel()
+                    logger.debug("end of stream")
                     break
+                logger.debug(self.state)
+                print(f"data: {data}")
                 line = data.decode().rstrip()
                 self.app.post_message(self.Stdout(line))
                 logger.debug(line)
+            self.state = State.STOPPED
+            if not waiter.done():
+                waiter.cancel()
 
     async def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Called when the worker state changes."""

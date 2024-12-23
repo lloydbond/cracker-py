@@ -85,6 +85,7 @@ class Makefile(IRunner):
         print(f"{self.command.runner} {self.command.target}")
         self.command.process = await asyncio.create_subprocess_exec(
             self.command.runner,
+            "--silent",
             self.command.target,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
@@ -96,24 +97,10 @@ class Makefile(IRunner):
         return self.command.process
 
     async def __aexit__(self, *args):
-
-        print(f"with __exit__ {self.command.process.returncode}")
-        # self.target.process.stdin.write(signal.SIGTERM)
-        if self.command.process.returncode is None:
-
-            while psutil.pid_exists(self.command.process.pid):
-                print("kill terminate wait")
-                await asyncio.sleep(1.0)
-                self.command.process.kill()
-
-        retcode = await self.command.process.wait()
-        print(f"stopped {self.command.runner} {self.command.target}")
-        return retcode
-
-    def cancel(self):
-        if not self.command.process.returncode:
-            print("kill terminate wait")
-            self.command.process.stdin.write(signal.SIGTERM)
+        self.command.process.stdout._transport.close()
+        self.command.process.stdin.close()
+        await self.command.process.stdin.wait_closed()
+        await self.command.process.wait()
 
 
 def Factory(target: str, runner: Type = Type.MAKEFILE):
