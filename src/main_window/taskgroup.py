@@ -24,24 +24,22 @@ class Task(Button):
     class Stdout(Message):
         """stdout pipe output update"""
 
-        def __init__(self, output: str) -> None:
-            self.output: str = output
+        def __init__(self, output: List[str]) -> None:
+            self.output: List[str] = output
             super().__init__()
 
     def __init__(self, name: str) -> None:
         print(f"create task-{name}")
         self.target = name
         self.state = State.STOPPED
-        # self.proc: IRunner = Factory(name, Type.MAKEFILE)
         super().__init__(name, id=f"task-{name}")
 
     async def update_async(self):
-        import logging
 
-        logger = logging.getLogger(__name__)
-        logging.basicConfig(
-            filename="stream2.log", encoding="utf-8", level=logging.DEBUG
-        )
+        async def test_stdout(cnt=0) -> List[str]:
+            line = [f"in test_stdout {cnt}"]
+            await asyncio.sleep(0.05)
+            return line
 
         async def wait_me(stdin):
             import signal
@@ -52,44 +50,66 @@ class Task(Button):
             await stdin.drain()
             return b""
 
-        async def yield_stdout(stdout):
+        async def wait_buf():
+            await asyncio.sleep(0.1)
+
+        async def yield_stdout(stdout) -> str:
             line = ""
             try:
                 line = await stdout.readline()
+            except RuntimeError:
+                print(
+                    "Task Runner process cancelled mid stream. It's okay we are handling it here."
+                )
+
             except Exception as e:
                 print(f"exception type is {type(e)}")
-                print("Task Runner process cancelled mid stream.")
 
             return line
 
         async with Factory(self.target, Type.MAKEFILE) as proc:
             self.state = State.STARTED
+            cnt = 0
             waiter = asyncio.create_task(wait_me(proc.stdin), name="WAITER")
-            r = None
+            buffer = asyncio.create_task(wait_buf(), name="BUFFER")
+            reader = asyncio.create_task(yield_stdout(proc.stdout), name="STDOUT")
+            lines: List[str] = []
             while True:
-                r = asyncio.create_task(yield_stdout(proc.stdout), name="STDOUT")
+
                 done, _ = await asyncio.wait(
-                    [r, waiter],
+                    [
+                        reader,
+                        waiter,
+                        # tester,
+                        buffer,
+                    ],
                     return_when=asyncio.FIRST_COMPLETED,
                 )
-                for task in done:
-                    if task.exception() is not None:
-                        data = b""
-                        r.cancel()
-                        break
+                task = done.pop()
+                if task.get_name() == "BUFFER":
+                    if len(lines) > 0:
+                        self.app.post_message(self.Stdout(lines[:]))
+                        lines.clear()
+                    buffer = asyncio.create_task(wait_buf(), name="BUFFER")
+                    continue
 
-                    data = await task
-                if data == b"":
-                    logger.debug("end of stream")
+                if task.exception() is not None:
+                    reader.cancel()
                     break
-                logger.debug(self.state)
-                print(f"data: {data}")
-                line = data.decode().rstrip()
-                self.app.post_message(self.Stdout(line))
-                logger.debug(line)
+
+                data = await task
+                if data == b"":
+                    break
+                lines.append(data.decode().rstrip())
+                reader = asyncio.create_task(yield_stdout(proc.stdout), name="STDOUT")
+
             self.state = State.STOPPED
             if not waiter.done():
                 waiter.cancel()
+            if not buffer.done():
+                buffer.cancel()
+            if len(lines) > 0:
+                self.app.post_message(self.Stdout(lines[:]))
 
     async def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
         """Called when the worker state changes."""
@@ -102,7 +122,6 @@ class Task(Button):
         assert event.button.id is not None
         task = event.button.id.partition("-")[-1]
         if self.state == State.STOPPED:
-            print(f"start task {task}")
             self.wok = self.app.run_worker(
                 self.update_async,
                 name=f"task {task}",
@@ -111,11 +130,9 @@ class Task(Button):
                 thread=True,
                 exclusive=True,
             )
-            print(f"worker started: {self.wok.is_running}")
         else:
-            print(f"stop task {task}")
             self.state = State.STOPPED
-            self.post_message(self.Stdout(f"stop task {task}"))
+            self.post_message(self.Stdout([f"stop task {task}"]))
 
 
 class TaskGroup(HorizontalGroup):

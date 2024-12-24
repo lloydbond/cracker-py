@@ -4,11 +4,7 @@ from enum import Enum, auto
 import asyncio
 import psutil
 import signal
-
-import logging
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename="stream2.log", encoding="utf-8", level=logging.DEBUG)
+import os
 
 
 class Type(Enum):
@@ -45,30 +41,9 @@ class IRunner(ABC):
     async def __aenter__(self):
         pass
 
+    @abstractmethod
     async def __aexit__(self, *args):
         pass
-
-    # @abstractmethod
-    # async def start(self) -> None:
-    #     pass
-
-    # @abstractmethod
-    # async def stop(self) -> int:
-    #     pass
-
-    # @property
-    # @abstractmethod
-    # def state(self) -> State:
-    #     pass
-
-    # @property
-    # @abstractmethod
-    # def stdout(self):
-    #     pass
-
-    # @abstractmethod
-    # async def wait(self) -> int | None:
-    #     pass
 
 
 class Makefile(IRunner):
@@ -79,10 +54,7 @@ class Makefile(IRunner):
         )
 
     async def __aenter__(self):
-        import os
 
-        print("with __enter__")
-        print(f"{self.command.runner} {self.command.target}")
         self.command.process = await asyncio.create_subprocess_exec(
             self.command.runner,
             "--silent",
@@ -93,7 +65,6 @@ class Makefile(IRunner):
             env=dict(os.environ, PYTHONUNBUFFERED="1"),
         )
         self.command.state = State.RUNNING
-        print(f"started {self.command.runner} {self.command.target}")
         return self.command.process
 
     async def __aexit__(self, *args):

@@ -1,10 +1,13 @@
 from typing import List, Dict
 
+
+from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import HorizontalGroup, VerticalScroll
 from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import RichLog, Footer, Header
+from textual.worker import Worker, get_current_worker
 
 from main_window.taskgroup import TaskGroup, Task
 from parsers.makefile import Makefile
@@ -27,20 +30,23 @@ class MainWindow(App):
         ("d", "toggle_dark", "Toggle dark mode"),
     ]
     _targets: Dict[str, List[str]]
-    output: reactive[List[str]] = reactive([], always_update=True)
-    richlog: RichLog
+    output: reactive[List[str]] = reactive(["start", "fart\n", "mart\n"])
 
     def __init__(self, files: List[str]):
         """The main window layout. Provide a list of task runner files"""
 
         self._targets = {file: Makefile().targets(file) for file in files}
-        self.richlog = RichLog(
-            id="richlog", highlight=True, markup=False, max_lines=1_000
-        )
         super().__init__()
 
     def compose(self) -> ComposeResult:
         """Main layout for the app window"""
+        richlog = RichLog(
+            highlight=True,
+            max_lines=1000,
+            markup=False,
+            id="richlog",
+        )
+        richlog.write("".join(self.output))
 
         yield Header()
         yield Footer()
@@ -49,16 +55,23 @@ class MainWindow(App):
                 *[TaskGroup(file, targets) for file, targets in self._targets.items()],
                 id="tasks",
             ),
-            VerticalScroll(self.richlog, id="stdoutput"),
+            VerticalScroll(
+                richlog,
+                id="stdoutput",
+            ),
         )
 
-    def on_ready(self) -> None:
-        self.richlog.write("stdout ready...\n\n")
-
     async def on_task_stdout(self, message: Task.Stdout) -> None:
-        self.richlog.write(message.output)
-        if len(self.output) > 1_000_000:
-            print("over 1 million, needs trim")
+
+        if len(message.output) <= 0:
+            return
+        self.update_output(message.output)
+
+    @work(exclusive=True, thread=True, description="princesa")
+    def update_output(self, output: List[str]) -> None:
+        if len(output) <= 0:
+            return
+        self.query_one(RichLog).write("\n".join(output))
 
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""
@@ -66,8 +79,3 @@ class MainWindow(App):
         self.theme = (
             "textual-dark" if self.theme == "textual-light" else "textual-light"
         )
-
-
-# if __name__ == "__main__":
-#     app = MainWindow()
-#     app.run()
