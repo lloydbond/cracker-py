@@ -65,13 +65,16 @@ class MainWindow(App):
 
         if len(message.output) <= 0:
             return
+
         self.update_output(message.output)
 
-    @work(exclusive=True, thread=True, description="princesa")
+    @work(exclusive=True, thread=True, description="richlog_update")
     def update_output(self, output: List[str]) -> None:
         if len(output) <= 0:
             return
-        self.query_one(RichLog).write("\n".join(output))
+        richlog = self.query_one(RichLog)
+        for line in output:
+            richlog.write(line)
 
     def action_toggle_dark(self) -> None:
         """An action to toggle dark mode."""

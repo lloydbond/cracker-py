@@ -1,12 +1,12 @@
 from typing import List
 import asyncio
 
-from textual import on
+from textual import on, work
 from textual.app import ComposeResult
 from textual.containers import HorizontalGroup
 from textual.message import Message
 from textual.widgets import ListItem, ListView, Button
-from textual.worker import Worker
+from textual.worker import Worker, WorkerState
 
 from runner.runner import Factory, State, Type
 
@@ -32,8 +32,9 @@ class Task(Button):
         print(f"create task-{name}")
         self.target = name
         self.state = State.STOPPED
-        super().__init__(name, id=f"task-{name}")
+        super().__init__(name, id=f"task-{name}", classes="idle")
 
+    @work(thread=True, exclusive=True)
     async def update_async(self):
 
         async def test_stdout(cnt=0) -> List[str]:
@@ -46,12 +47,17 @@ class Task(Button):
 
             while not self.state == State.STOPPED:
                 await asyncio.sleep(0.05)
-            stdin.write(signal.SIGKILL)
-            await stdin.drain()
+            try:
+                stdin.write(signal.SIGKILL)
+                await stdin.drain()
+            except AssertionError:
+                print(
+                    "Unable to send kill signal to the running child process. Did someone manually kill it?"
+                )
             return b""
 
         async def wait_buf():
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
 
         async def yield_stdout(stdout) -> str:
             line = ""
@@ -78,10 +84,9 @@ class Task(Button):
 
                 done, _ = await asyncio.wait(
                     [
-                        reader,
-                        waiter,
-                        # tester,
                         buffer,
+                        waiter,
+                        reader,
                     ],
                     return_when=asyncio.FIRST_COMPLETED,
                 )
@@ -90,6 +95,7 @@ class Task(Button):
                     if len(lines) > 0:
                         self.app.post_message(self.Stdout(lines[:]))
                         lines.clear()
+                        cnt += 1
                     buffer = asyncio.create_task(wait_buf(), name="BUFFER")
                     continue
 
@@ -111,10 +117,6 @@ class Task(Button):
             if len(lines) > 0:
                 self.app.post_message(self.Stdout(lines[:]))
 
-    async def on_worker_state_changed(self, event: Worker.StateChanged) -> None:
-        """Called when the worker state changes."""
-        self.log(event)
-
     @on(Button.Pressed, "Task")
     async def task_pressed(self, event: Button.Pressed) -> None:
         """Task start"""
@@ -122,14 +124,7 @@ class Task(Button):
         assert event.button.id is not None
         task = event.button.id.partition("-")[-1]
         if self.state == State.STOPPED:
-            self.wok = self.app.run_worker(
-                self.update_async,
-                name=f"task {task}",
-                group=self.target,
-                start=True,
-                thread=True,
-                exclusive=True,
-            )
+            self.update_async()
         else:
             self.state = State.STOPPED
             self.post_message(self.Stdout([f"stop task {task}"]))

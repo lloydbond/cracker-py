@@ -20,9 +20,7 @@ Task:hover {
 Task:focus {
     border:  solid $text-primary;
 }
-Button {
-	color: blue;
-}
+
 
 #stop {
     dock: left;
