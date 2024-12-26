@@ -1,16 +1,37 @@
 from typing import List, Dict
 
 
-from textual import work
+from textual import work, on
 from textual.app import App, ComposeResult
 from textual.containers import HorizontalGroup, VerticalScroll
 from textual.message import Message
 from textual.reactive import reactive
-from textual.widgets import RichLog, Footer, Header
+from textual.widgets import RichLog, Footer, Header, Button, ListView, ListItem
+
 from textual.worker import Worker, get_current_worker
 
-from main_window.taskgroup import TaskGroup, Task
+from main_window.targetgroup import Task, ActionLabel
 from parsers.makefile import Makefile
+from parsers.npm import Npm
+from runner.runner import Type
+
+NAMED = {
+    "Makefile": "make",
+    "package.json": "npm",
+}
+
+
+def Factory(filename: str):
+    d = {
+        "Makefile": Type.MAKEFILE,
+        "package.json": Type.NPM,
+    }
+    runners = {
+        Type.MAKEFILE: Makefile.targets,
+        Type.NPM: Npm.targets,
+    }
+
+    return runners[d[filename]](filename)
 
 
 class MainWindow(App):
@@ -21,7 +42,6 @@ class MainWindow(App):
 
         def __init__(self, update: bool) -> None:
             self.update: bool = update
-            print("richlogoutput message")
             super().__init__()
 
     CSS_PATH = "app.tcss"
@@ -30,12 +50,11 @@ class MainWindow(App):
         ("d", "toggle_dark", "Toggle dark mode"),
     ]
     _targets: Dict[str, List[str]]
-    output: reactive[List[str]] = reactive(["start", "fart\n", "mart\n"])
 
     def __init__(self, files: List[str]):
         """The main window layout. Provide a list of task runner files"""
 
-        self._targets = {file: Makefile().targets(file) for file in files}
+        self._targets = {NAMED[file]: Factory(file) for file in files}
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -46,19 +65,17 @@ class MainWindow(App):
             markup=False,
             id="richlog",
         )
-        richlog.write("".join(self.output))
+        richlog.write("start your task ...")
+        runner_listview = ListView(
+            *[ListItem(ActionLabel(name)) for name in self._targets.keys()]
+        )
 
         yield Header()
         yield Footer()
         yield HorizontalGroup(
-            VerticalScroll(
-                *[TaskGroup(file, targets) for file, targets in self._targets.items()],
-                id="tasks",
-            ),
-            VerticalScroll(
-                richlog,
-                id="stdoutput",
-            ),
+            VerticalScroll(runner_listview, id="runners"),
+            VerticalScroll(ListView(), id="targets"),
+            VerticalScroll(richlog, id="stdoutput"),
         )
 
     async def on_task_stdout(self, message: Task.Stdout) -> None:
@@ -81,4 +98,18 @@ class MainWindow(App):
 
         self.theme = (
             "textual-dark" if self.theme == "textual-light" else "textual-light"
+        )
+
+    @on(Button.Pressed, "ActionLabel")
+    async def label_pressed(self, event: Button.Pressed) -> None:
+        """Runner label pressed"""
+
+        print("action label pressed")
+        assert event.button.id is not None
+        print(event.button.id)
+        list_view = self.query_one("#targets").query_one(ListView)
+        list_view.clear()
+        print(list(map(lambda x: x, self._targets[event.button.id])))
+        list_view.extend(
+            [ListItem(Task(target)) for target in self._targets[event.button.id]]
         )

@@ -1,5 +1,5 @@
-MainWindow #tasks {
-    width: 29;
+MainWindow #runners {
+    width: 10;
 }
 ActionLabel {
     border: solid $text-accent;
@@ -7,11 +7,14 @@ ActionLabel {
     min-width: 10;
 }
 
+MainWindow #targets {
+    width: 15;
+}
+
 Task {
     border: blank;
     color: $text-secondary;
-    min-width: 15;
-    min-height: 1;
+    min-width: 10;
 }
 
 Task:hover {

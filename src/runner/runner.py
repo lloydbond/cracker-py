@@ -9,6 +9,18 @@ import os
 
 class Type(Enum):
     MAKEFILE = auto()
+    NPM = auto()
+
+
+def Factory(target: str, runner: Type = Type.MAKEFILE):
+    """Factory Method for different runner types"""
+
+    runners = {
+        Type.MAKEFILE: Makefile,
+        Type.NPM: Npm,
+    }
+
+    return runners[runner](target)
 
 
 class State(Enum):
@@ -74,11 +86,28 @@ class Makefile(IRunner):
         await self.command.process.wait()
 
 
-def Factory(target: str, runner: Type = Type.MAKEFILE):
-    """Factory Method for different runner types"""
+class Npm(IRunner):
 
-    runners = {
-        Type.MAKEFILE: Makefile,
-    }
+    def __init__(self, target: str) -> None:
+        self.command: Command = Command(
+            state=State.STOPPED, runner="npm", target=target, process=None
+        )
 
-    return runners[runner](target)
+    async def __aenter__(self):
+
+        self.command.process = await asyncio.create_subprocess_exec(
+            self.command.runner,
+            self.command.target,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            stdin=asyncio.subprocess.PIPE,
+            env=dict(os.environ, PYTHONUNBUFFERED="1"),
+        )
+        self.command.state = State.RUNNING
+        return self.command.process
+
+    async def __aexit__(self, *args):
+        self.command.process.stdout._transport.close()
+        self.command.process.stdin.close()
+        await self.command.process.stdin.wait_closed()
+        await self.command.process.wait()

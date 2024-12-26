@@ -9,7 +9,7 @@ parsed_toml = toml.load("pyproject.toml")["tool"]["poetry"]
 VERSION = parsed_toml["version"]
 DESCRIPTION = parsed_toml["description"]
 NAME = parsed_toml["name"]
-SUPPORTED = ["Makefile"]
+SUPPORTED = ["Makefile", "package.json"]
 
 
 def main() -> None:
@@ -18,7 +18,8 @@ def main() -> None:
         print(VERSION)
         exit(0)
     files: List[str] = []
-    if len(args.files) <= 0:
+    print(args)
+    if len(args.files) > 0:
         files += find_task_runners(args.files)
     else:
         files = find_task_runners()
