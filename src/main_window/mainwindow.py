@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 
 from textual import work, on
@@ -21,7 +21,7 @@ NAMED = {
 }
 
 
-def Factory(filename: str):
+def Factory(filename: str) -> Tuple[Type, List[str]]:
     d = {
         "Makefile": Type.MAKEFILE,
         "package.json": Type.NPM,
@@ -30,8 +30,9 @@ def Factory(filename: str):
         Type.MAKEFILE: Makefile.targets,
         Type.NPM: Npm.targets,
     }
+    type = d[filename]
 
-    return runners[d[filename]](filename)
+    return (type, runners[d[filename]](filename))
 
 
 class MainWindow(App):
@@ -49,7 +50,7 @@ class MainWindow(App):
         ("q", "app.quit", "quit"),
         ("d", "toggle_dark", "Toggle dark mode"),
     ]
-    _targets: Dict[str, List[str]]
+    _targets: Dict[str, Tuple[Type, List[str]]]
 
     def __init__(self, files: List[str]):
         """The main window layout. Provide a list of task runner files"""
@@ -107,9 +108,19 @@ class MainWindow(App):
         print("action label pressed")
         assert event.button.id is not None
         print(event.button.id)
+        print(
+            *[
+                (target, self._targets[event.button.id][0])
+                for target in self._targets[event.button.id][1]
+            ]
+        )
         list_view = self.query_one("#targets").query_one(ListView)
         list_view.clear()
-        print(list(map(lambda x: x, self._targets[event.button.id])))
+        print(self._targets[event.button.id][0])
+        print(self._targets[event.button.id][1])
         list_view.extend(
-            [ListItem(Task(target)) for target in self._targets[event.button.id]]
+            [
+                ListItem(Task(target, self._targets[event.button.id][0]))
+                for target in self._targets[event.button.id][1]
+            ]
         )

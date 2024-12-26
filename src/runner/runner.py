@@ -67,6 +67,7 @@ class Makefile(IRunner):
 
     async def __aenter__(self):
 
+        print(f"{self.command.runner} {self.command.target}")
         self.command.process = await asyncio.create_subprocess_exec(
             self.command.runner,
             "--silent",
@@ -95,8 +96,10 @@ class Npm(IRunner):
 
     async def __aenter__(self):
 
+        print(f"{self.command.runner} run {self.command.target}")
         self.command.process = await asyncio.create_subprocess_exec(
             self.command.runner,
+            "run",
             self.command.target,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
