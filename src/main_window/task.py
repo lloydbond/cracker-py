@@ -3,6 +3,7 @@ import asyncio
 
 from textual import on, work
 from textual.message import Message
+from textual.reactive import reactive
 from textual.widgets import Button
 
 from factory import RunnerFactory
@@ -20,19 +21,22 @@ class Task(Button):
             self.output: List[str] = output
             super().__init__()
 
+    state: State = reactive(State.STOPPED)
+
     def __init__(self, name: str, type: Type = Type.MAKEFILE) -> None:
         print(f"create task-{name} type:{type}")
         self.target = name
         self.type: Type = type
-        self.state = State.STOPPED
-        super().__init__(name, id=f"task-{name.replace(':', '-')}", classes="idle")
+        super().__init__(name, id=f"task-{name.replace(':', '-')}")
 
     @work(thread=True, exclusive=True)
     async def update_async(self):
+        self.state = State.STARTED
+
         async def wait_me(stdin):
             import signal
 
-            while not self.state == State.STOPPED:
+            while not self.state == State.KILL:
                 await asyncio.sleep(0.05)
             try:
                 stdin.write(signal.SIGKILL)
@@ -61,12 +65,12 @@ class Task(Button):
             return line
 
         async with RunnerFactory(self.target, self.type) as proc:
-            self.state = State.STARTED
             cnt = 0
             waiter = asyncio.create_task(wait_me(proc.stdin), name="WAITER")
             buffer = asyncio.create_task(wait_buf(), name="BUFFER")
             reader = asyncio.create_task(yield_stdout(proc.stdout), name="STDOUT")
             lines: List[str] = []
+            self.state = State.RUNNING
             while True:
 
                 done, _ = await asyncio.wait(
@@ -96,13 +100,25 @@ class Task(Button):
                 lines.append(data.decode().rstrip())
                 reader = asyncio.create_task(yield_stdout(proc.stdout), name="STDOUT")
 
-            self.state = State.STOPPED
             if not waiter.done():
                 waiter.cancel()
             if not buffer.done():
                 buffer.cancel()
             if len(lines) > 0:
                 self.app.post_message(self.Stdout(lines[:]))
+            self.state = State.STOPPED
+
+    async def watch_state(self, old_state: State, new_state: State) -> None:
+        print(f"state: {old_state} -> {new_state}")
+        m = {
+            State.RUNNING: "stop",
+            State.KILL: "stopping",
+            State.STARTED: "starting",
+            State.STOPPED: "idle",
+        }
+        self.remove_class(m[old_state])
+        self.add_class(m[new_state])
+        print(self.classes)
 
     @on(Button.Pressed, "Task")
     async def task_pressed(self, event: Button.Pressed) -> None:
@@ -113,5 +129,5 @@ class Task(Button):
         if self.state == State.STOPPED:
             self.update_async()
         else:
-            self.state = State.STOPPED
+            self.state = State.KILL
             self.post_message(self.Stdout([f"stop task {task}"]))

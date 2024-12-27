@@ -10,6 +10,7 @@ class State(Enum):
     STOPPED = auto()
     STARTED = auto()
     RUNNING = auto()
+    KILL = auto()
 
 
 @dataclass

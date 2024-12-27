@@ -13,7 +13,6 @@ MainWindow #targets {
 
 Task {
     border: blank;
-    color: $text-secondary;
     min-width: 10;
 }
 
@@ -24,13 +23,15 @@ Task:focus {
     border:  solid $text-primary;
 }
 
-
-#stop {
-    dock: left;
-    display: none;
+.idle {
+    color: $text-secondary;
 }
-
-#start {
-    dock: left;
-    display: none;
+.stopping {
+    color: $text-error;
+}
+.starting {
+    color: $text-success;
+}
+.stop {
+    color: $text-warning;
 }
