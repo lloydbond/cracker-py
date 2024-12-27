@@ -5,34 +5,13 @@ from textual import work, on
 from textual.app import App, ComposeResult
 from textual.containers import HorizontalGroup, VerticalScroll
 from textual.message import Message
-from textual.reactive import reactive
 from textual.widgets import RichLog, Footer, Header, Button, ListView, ListItem
 
-from textual.worker import Worker, get_current_worker
 
-from main_window.targetgroup import Task, ActionLabel
-from parsers.makefile import Makefile
-from parsers.npm import Npm
-from runner.runner import Type
-
-NAMED = {
-    "Makefile": "make",
-    "package.json": "npm",
-}
-
-
-def Factory(filename: str) -> Tuple[Type, List[str]]:
-    d = {
-        "Makefile": Type.MAKEFILE,
-        "package.json": Type.NPM,
-    }
-    runners = {
-        Type.MAKEFILE: Makefile.targets,
-        Type.NPM: Npm.targets,
-    }
-    type = d[filename]
-
-    return (type, runners[d[filename]](filename))
+from main_window.task import Task
+from main_window.actionlabel import ActionLabel
+from factory import ParserFactory
+from supported import NAMED, Type
 
 
 class MainWindow(App):
@@ -55,7 +34,7 @@ class MainWindow(App):
     def __init__(self, files: List[str]):
         """The main window layout. Provide a list of task runner files"""
 
-        self._targets = {NAMED[file]: Factory(file) for file in files}
+        self._targets = {NAMED[file]: ParserFactory(file) for file in files}
         super().__init__()
 
     def compose(self) -> ComposeResult:

@@ -5,11 +5,13 @@ from args.parser import Parser
 import toml
 from pathlib import Path
 
+from supported import NAMED
+
 parsed_toml = toml.load("pyproject.toml")["tool"]["poetry"]
 VERSION = parsed_toml["version"]
 DESCRIPTION = parsed_toml["description"]
 NAME = parsed_toml["name"]
-SUPPORTED = ["Makefile", "package.json"]
+SUPPORTED = list(NAMED.keys())
 
 
 def main() -> None:
