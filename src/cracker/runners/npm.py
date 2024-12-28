@@ -1,20 +1,19 @@
 import asyncio
 import os
+from . import Command, IRunner, State
 
-from runners import IRunner, Command, State
 
-
-class Makefile(IRunner):
+class Npm(IRunner):
 
     def __init__(self, target: str) -> None:
         self.command: Command = Command(
-            state=State.STOPPED, runner="make", target=target, process=None
+            state=State.STOPPED, runner="npm", target=target, process=None
         )
 
     async def __aenter__(self):
         self.command.process = await asyncio.create_subprocess_exec(
             self.command.runner,
-            "--silent",
+            "run",
             self.command.target,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,

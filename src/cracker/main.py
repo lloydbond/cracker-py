@@ -1,11 +1,11 @@
 from typing import List
-from main_window.mainwindow import MainWindow
-from args.parser import Parser
+from .supported import NAMED
+from .mainwindow import MainWindow
+from .args.parser import Parser
 
 import toml
 from pathlib import Path
 
-from supported import NAMED
 
 parsed_toml = toml.load("pyproject.toml")["tool"]["poetry"]
 VERSION = parsed_toml["version"]

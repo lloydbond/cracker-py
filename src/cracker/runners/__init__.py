@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 import asyncio
 
-from supported import Type
+from ..supported import Type
 
 
 class State(Enum):

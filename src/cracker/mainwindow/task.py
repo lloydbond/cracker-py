@@ -6,9 +6,9 @@ from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Button
 
-from factory import RunnerFactory
-from runners import State
-from supported import Type
+from ..factory import RunnerFactory
+from ..runners import State
+from ..supported import Type
 
 
 class Task(Button):

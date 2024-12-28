@@ -8,10 +8,10 @@ from textual.message import Message
 from textual.widgets import RichLog, Footer, Header, Button, ListView, ListItem
 
 
-from main_window.task import Task
-from main_window.actionlabel import ActionLabel
-from factory import ParserFactory
-from supported import NAMED, Type
+from .task import Task
+from .actionlabel import ActionLabel
+from ..factory import ParserFactory
+from ..supported import NAMED, Type
 
 
 class MainWindow(App):

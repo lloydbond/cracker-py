@@ -1,8 +1,8 @@
 from typing import List, Tuple
-from supported import NAMED_TYPE, Type
 
-from parsers import Makefile as pMakefile, Npm as pNpm
-from runners import Makefile as rMakefile, Npm as rNpm
+from ..supported import NAMED_TYPE, Type
+from ..parsers import Makefile as pMakefile, Npm as pNpm
+from ..runners import Makefile as rMakefile, Npm as rNpm
 
 
 def RunnerFactory(target: str, runner: Type = Type.MAKEFILE):

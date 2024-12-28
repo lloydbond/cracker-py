@@ -5,26 +5,27 @@ description = "Cracker is a simple, fast, and plain task runner. Designed with t
 authors = ["Lloyd Bond <lloyd.bond@gmail.com>"]
 license = "GPL-3.0-or-later"
 readme = "README.md"
-packages = [{include = "stopwatch", from = "src"}]
+packages = [
+]
 
 [tool.poetry.dependencies]
 python = "^3.12"
 textual = "^1.0.0"
 toml = "^0.10.2"
 hat-peg = "^0.5.9"
-mypy = "^1.13.0"
 asyncio = "^3.4.3"
 types-psutil = "^6.1.0.20241102"
 psutil = "^6.1.0"
-black = "^24.10.0"
-python-lsp-server = "^1.12.0"
-pytest = "^8.3.4"
 
 [tool.poetry.scripts]
-ck = 'main.py:main'
+ck = 'cracker.main:main'
 
 [tool.poetry.group.dev.dependencies]
 textual-dev = "^1.7.0"
+black = "^24.10.0"
+python-lsp-server = "^1.12.0"
+pytest = "^8.3.4"
+mypy = "^1.13.0"
 
 [build-system]
 requires = ["poetry-core"]
