@@ -1,0 +1,37 @@
+MainWindow #runners {
+    width: 10;
+}
+ActionLabel {
+    border: solid $text-accent;
+    color: $text-primary;
+    min-width: 10;
+}
+
+MainWindow #targets {
+    width: 15;
+}
+
+Task {
+    border: blank;
+    min-width: 10;
+}
+
+Task:hover {
+    border:  solid $text-accent;
+}
+Task:focus {
+    border:  solid $text-primary;
+}
+
+.idle {
+    color: $text-secondary;
+}
+.stopping {
+    color: $text-error;
+}
+.starting {
+    color: $text-success;
+}
+.stop {
+    color: $text-warning;
+}
