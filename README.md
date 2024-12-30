@@ -41,11 +41,12 @@ Clone the repository:
 ```bash
 git clone git@github.com:lloydbond/cracker-py.git
 cd cracker-py
+poetry env use 3.12.8
 poetry shell
 poetry install
 poetry build
-pip install ./dist/cracker*.whl
-
+deactivate
+pip install dist/cracker-`poetry version | cut -d ' ' -f 2`-py3-none-any.whl
 
 ```
 
@@ -59,26 +60,21 @@ pip install ./dist/cracker*.whl
 ### Enable Log messages
 Log messages are limited for as the tool reaches a 1.0 release.
 ```bash
-  RUST_LOG=ck=[warn|info|error|debug] ck
+  ck --log=[warn|info|error|debug|critical]
 
-  RUST_LOG=ck=debug ck
+  ck --log=debug
 ```
 ## TODO:
-- [x] Asynchronously open Makefile
-- [x] handle multi-target Makefile rules
-- [x] support commands with streaming data
-  - [x] example: tail -f /var/log/dmesg.log
 - [ ] Support additional task runner type build scripts
-  - [ ] npm
+  - [x] npm
   - [ ] grunt
   - [ ] taskpy
   - [ ] etc.
-- [x] switch makfile-lossless to PEG for rule target detecion
-- [ ] seperate task runner support to library
-- [ ] cracker-tui
+- [ ] performance imporvements for something like `cat my_massive_200million_line.log`
+    * probably not usefule but a known limitation *
 - [ ] hx/vi compatible keymapping
-- [ ] add to crates.io
-- [x] CICD
+- [ ] add to pypi.org
+- [ ] CICD
 
 
 ## Motivation
@@ -89,7 +85,7 @@ When you need to give a laymon commands to run and they are averse to typing in 
 
 ### ***Note from the maintainer***
 
-I've been using this project as a means to learn Rust. Expect improvments and additions as I have time. Any improvements, code style, or feed back will go along way for
-this project. Any contributions or additions to the supported Task runners as well as UI beautifcations or simplifications
-are greatly welcomed and appreciated. Happy Coding!
+Any improvements, code style, or feed back will go along way for this project. Any contributions or
+additions to the supported Task runners as well as UI beautifcations or simplifications are greatly
+welcomed and appreciated. Happy Coding!
 

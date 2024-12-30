@@ -1,3 +1,4 @@
+import logging
 from typing import List, Dict, Tuple
 
 
@@ -6,12 +7,20 @@ from textual.app import App, ComposeResult
 from textual.containers import HorizontalGroup, VerticalScroll
 from textual.message import Message
 from textual.widgets import RichLog, Footer, Header, Button, ListView, ListItem
+from textual.logging import TextualHandler
 
 
 from .task import Task
 from .actionlabel import ActionLabel
 from ..factory import ParserFactory
 from ..supported import NAMED, Type
+
+logger = logging.getLogger(__name__)
+# logging.basicConfig(
+#     encoding="utf-8",
+#     level=logging.DEBUG,
+#     handlers=[TextualHandler()],
+# )
 
 
 class MainWindow(App):
@@ -31,10 +40,13 @@ class MainWindow(App):
     ]
     _targets: Dict[str, Tuple[Type, List[str]]]
 
-    def __init__(self, files: List[str]):
+    def __init__(self, files: List[str] = ["Makefile", "package.json"]):
         """The main window layout. Provide a list of task runner files"""
 
+        logger.debug("main Window")
+        logger.debug(f"files to use {files}")
         self._targets = {NAMED[file]: ParserFactory(file) for file in files}
+        logger.debug(f"runners and targets found {self._targets}")
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -84,19 +96,11 @@ class MainWindow(App):
     async def label_pressed(self, event: Button.Pressed) -> None:
         """Runner label pressed"""
 
-        print("action label pressed")
+        logger.debug("action label pressed")
         assert event.button.id is not None
-        print(event.button.id)
-        print(
-            *[
-                (target, self._targets[event.button.id][0])
-                for target in self._targets[event.button.id][1]
-            ]
-        )
+        logger.debug(f"action button: {event.button.id}")
         list_view = self.query_one("#targets").query_one(ListView)
         list_view.clear()
-        print(self._targets[event.button.id][0])
-        print(self._targets[event.button.id][1])
         list_view.extend(
             [
                 ListItem(Task(target, self._targets[event.button.id][0]))

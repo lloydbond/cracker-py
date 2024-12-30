@@ -3,6 +3,8 @@
 -------------------
 
 -   First working version.
+-   Support for Makefile
+-   Support for Npm
 
 Notes
 -----

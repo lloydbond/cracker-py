@@ -5,7 +5,10 @@ description = "Cracker is a simple, fast, and plain task runner. Designed with t
 authors = ["Lloyd Bond <lloyd.bond@gmail.com>"]
 license = "GPL-3.0-or-later"
 readme = "README.md"
-packages = [
+include = [
+    "LICENSE",
+    "README.md",
+    "pyproject.toml",
 ]
 
 [tool.poetry.dependencies]

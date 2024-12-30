@@ -1,3 +1,4 @@
+import logging
 from typing import List
 import asyncio
 
@@ -5,10 +6,18 @@ from textual import on, work
 from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Button
+from textual.logging import TextualHandler
 
 from ..factory import RunnerFactory
 from ..runners import State
 from ..supported import Type
+
+logger = logging.getLogger(__name__)
+# logging.basicConfig(
+#     encoding="utf-8",
+#     level=logging.INFO,
+#     handlers=[TextualHandler()],
+# )
 
 
 class Task(Button):
@@ -24,7 +33,7 @@ class Task(Button):
     state: State = reactive(State.STOPPED)
 
     def __init__(self, name: str, type: Type = Type.MAKEFILE) -> None:
-        print(f"create task-{name} type:{type}")
+        logger.debug(f"create task-{name} type:{type}")
         self.target = name
         self.type: Type = type
         super().__init__(name, id=f"task-{name.replace(':', '-')}")
@@ -42,7 +51,7 @@ class Task(Button):
                 stdin.write(signal.SIGKILL)
                 await stdin.drain()
             except AssertionError:
-                print(
+                logger.debug(
                     "Unable to send kill signal to the running child process. Did someone manually kill it?"
                 )
             return b""
@@ -55,12 +64,14 @@ class Task(Button):
             try:
                 line = await stdout.readline()
             except RuntimeError:
-                print(
+                logger.debug(
                     "Task Runner process cancelled mid stream. It's okay we are handling it here."
                 )
 
             except Exception as e:
-                print(f"exception type is {type(e)}")
+                logger.debug(
+                    f"Wow, something crazy and unexpected just happened, please report it as a bug\n {e}"
+                )
 
             return line
 
@@ -109,7 +120,7 @@ class Task(Button):
             self.state = State.STOPPED
 
     async def watch_state(self, old_state: State, new_state: State) -> None:
-        print(f"state: {old_state} -> {new_state}")
+        logger.debug(f"state: {old_state} -> {new_state}")
         m = {
             State.RUNNING: "stop",
             State.KILL: "stopping",
@@ -118,7 +129,6 @@ class Task(Button):
         }
         self.remove_class(m[old_state])
         self.add_class(m[new_state])
-        print(self.classes)
 
     @on(Button.Pressed, "Task")
     async def task_pressed(self, event: Button.Pressed) -> None:
