@@ -1,3 +1,6 @@
+![cracker](./assets/cracker-py-sample.png)
+
+
 # cracker
 A plain and simple termainl ui for exploring and starting tasks.
 
