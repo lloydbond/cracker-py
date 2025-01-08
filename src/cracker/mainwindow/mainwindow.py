@@ -40,7 +40,7 @@ class MainWindow(App):
     ]
     _targets: Dict[str, Tuple[Type, List[str]]]
 
-    def __init__(self, files: List[str] = ["Makefile", "package.json"]):
+    def __init__(self, files: List[str] = ["Makefile", "package.json", "justfile"]):
         """The main window layout. Provide a list of task runner files"""
 
         logger.debug("main Window")

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cracker"
-version = "0.0.1"
+version = "0.2.0"
 description = "Cracker is a simple, fast, and plain task runner. Designed with the idea of supporting as many task tools as possible."
 authors = ["Lloyd Bond <lloyd.bond@gmail.com>"]
 license = "GPL-3.0-or-later"
