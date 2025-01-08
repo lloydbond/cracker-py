@@ -1,5 +1,6 @@
 import logging
 from typing import List
+import shutil
 from importlib.metadata import version
 from .supported import NAMED
 from .mainwindow import MainWindow
@@ -44,7 +45,7 @@ def main() -> None:
     )
     if len(args.files) > 0:
         logger.debug(args.files)
-        files += find_task_runners(args.files)
+        files = find_task_runners(args.files)
     else:
         files = find_task_runners()
 
@@ -54,7 +55,18 @@ def main() -> None:
 
 
 def find_task_runners(files: List[str] = SUPPORTED) -> List[str]:
-    return [file for file in files if Path(file).exists()]
+    f: List[str] = list()
+    for file in files:
+        if not Path(file).exists():
+            logger.warn(f"unable to find {file}")
+            continue
+        if not shutil.which(NAMED[file]):
+            logger.warn(f"unable to find {NAMED[file]} in your path")
+            continue
+        logger.debug(f"file validated {file}")
+        f.append(file)
+    logger.debug(f"task runners found: {f}")
+    return f
 
 
 if __name__ == "__main__":

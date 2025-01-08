@@ -2,7 +2,7 @@
 
 
 # cracker
-A plain and simple termainl ui for exploring and starting tasks.
+A plain and simple termainl ui for exploring, monitoring, and starting tasks. Makes use of exisiting task runners like Makefile, npm, and others.
 
 - [Requirements](#requirements)
 - [Supports](#supports)
@@ -48,15 +48,17 @@ poetry env use 3.12.8
 poetry shell
 poetry install
 poetry build
-deactivate
+*optional* deactivate
 pip install dist/cracker-`poetry version | cut -d ' ' -f 2`-py3-none-any.whl
+textual run --dev cracker.main:main --log=DEBUG -- Makefile
+
 
 ```
 
 ## Usage
 
 ```bash
-  cd /path/to/with/Makefile
+  cd /path/to/with/Makefile|justfile|package.json
   ck
 ```
 
@@ -70,6 +72,7 @@ Log messages are limited for as the tool reaches a 1.0 release.
 ## TODO:
 - [ ] Support additional task runner type build scripts
   - [x] npm
+  - [x] justfile
   - [ ] grunt
   - [ ] taskpy
   - [ ] etc.
