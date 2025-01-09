@@ -3,7 +3,7 @@ from typing import List
 import shutil
 from importlib.metadata import version
 from .supported import NAMED
-from .mainwindow import MainWindow
+from cracker.mainwindow import MainWindow
 from .args.parser import Parser
 from textual.logging import TextualHandler
 
