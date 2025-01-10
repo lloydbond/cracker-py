@@ -1,9 +1,12 @@
+from typing import List
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
 import asyncio
+import os
 
-from ..supported import Type
+from cracker.supported import Type
 
 
 class State(Enum):
@@ -23,6 +26,7 @@ class Target:
 class Command:
     state: State
     runner: str
+    args: List[str]
     target: str
     process: asyncio.subprocess.Process | None
 
@@ -30,7 +34,7 @@ class Command:
 class IRunner(ABC):
 
     @abstractmethod
-    def __init__(self, target: str) -> None:
+    def __init__(self, command: Command) -> None:
         pass
 
     @abstractmethod
@@ -42,6 +46,27 @@ class IRunner(ABC):
         pass
 
 
-from .makefile import Makefile
-from .npm import Npm
-from .justfile import Justfile
+class Runner(IRunner):
+
+    def __init__(self, command: Command) -> None:
+        command.state = State.STOPPED
+        self.command: Command = command
+
+    async def __aenter__(self):
+        self.command.process = await asyncio.create_subprocess_exec(
+            self.command.runner,
+            *self.command.args,
+            self.command.target,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            stdin=asyncio.subprocess.PIPE,
+            env=dict(os.environ, PYTHONUNBUFFERED="1"),
+        )
+        self.command.state = State.RUNNING
+        return self.command.process
+
+    async def __aexit__(self, *args):
+        self.command.process.stdout._transport.close()
+        self.command.process.stdin.close()
+        await self.command.process.stdin.wait_closed()
+        await self.command.process.wait()

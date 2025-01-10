@@ -8,9 +8,9 @@ from textual.reactive import reactive
 from textual.widgets import Button
 from textual.logging import TextualHandler
 
-from ..factory import RunnerFactory
-from ..runners import State
-from ..supported import Type
+from cracker.factory import RunnerFactory
+from cracker.runners import State
+from cracker.supported import Type
 
 logger = logging.getLogger(__name__)
 # logging.basicConfig(

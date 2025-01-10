@@ -1,3 +1,3 @@
-from .makefile import Makefile
-from .npm import Npm
-from .justfile import Justfile
+from cracker.parsers.makefile import Makefile
+from cracker.parsers.justfile import Justfile
+from cracker.parsers.npm import Npm

@@ -1,1 +1,1 @@
-from .mainwindow import MainWindow
+from cracker.mainwindow.mainwindow import MainWindow
