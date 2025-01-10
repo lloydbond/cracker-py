@@ -13,7 +13,7 @@ def RunnerFactory(target: str, runner: Type = Type.MAKEFILE) -> Type | None:
             command=Command(
                 state=State.STOPPED,
                 runner="just",
-                args=["--summary"],
+                args=[],
                 target=target,
                 process=None,
             )
