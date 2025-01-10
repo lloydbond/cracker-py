@@ -2,9 +2,9 @@ import logging
 from typing import List
 import shutil
 from importlib.metadata import version
-from .supported import NAMED
+from cracker.supported import NAMED
 from cracker.mainwindow import MainWindow
-from .args.parser import Parser
+from cracker.args.parser import Parser
 from textual.logging import TextualHandler
 
 

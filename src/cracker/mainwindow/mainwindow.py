@@ -10,10 +10,10 @@ from textual.widgets import RichLog, Footer, Header, Button, ListView, ListItem
 from textual.logging import TextualHandler
 
 
-from .task import Task
-from .actionlabel import ActionLabel
-from ..factory import ParserFactory
-from ..supported import NAMED, Type
+from cracker.mainwindow.task import Task
+from cracker.mainwindow.actionlabel import ActionLabel
+from cracker.factory import ParserFactory
+from cracker.supported import NAMED, Type
 
 logger = logging.getLogger(__name__)
 # logging.basicConfig(

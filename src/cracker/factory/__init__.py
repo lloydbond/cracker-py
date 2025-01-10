@@ -1,14 +1,14 @@
 from typing import List, Tuple
 
-from ..supported import NAMED_TYPE, Type
-from ..parsers import Makefile, Npm, Justfile
-from ..runners import Runner, Command, State
+from cracker.supported import NAMED_TYPE, Type
+from cracker.parsers import Makefile, Npm, Justfile
+from cracker.runners import Runner, Command, State
 
 
 def RunnerFactory(target: str, runner: Type = Type.MAKEFILE) -> Type | None:
     """Factory Method for different runner types"""
 
-    if runner == Type.Just:
+    if runner == Type.JUST:
         return Runner(
             command=Command(
                 state=State.STOPPED,

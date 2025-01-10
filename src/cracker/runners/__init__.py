@@ -1,10 +1,12 @@
+from typing import List
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
 import asyncio
 import os
-from . import IRunner, Command, State
-from ..supported import Type
+
+from cracker.supported import Type
 
 
 class State(Enum):
