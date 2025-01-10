@@ -1,3 +1,9 @@
+[v0.3.0] 2025-01-10
+-------------------
+
+-   refactor and simplify runners
+-   improve and simplify imports
+
 [v0.2.0] 2025-01-07
 -------------------
 

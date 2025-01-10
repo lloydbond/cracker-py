@@ -50,7 +50,7 @@ poetry install
 poetry build
 *optional* deactivate
 pip install dist/cracker-`poetry version | cut -d ' ' -f 2`-py3-none-any.whl
-textual run --dev cracker.main:main --log=DEBUG -- Makefile
+textual run --dev src/cracker/__main__.py --log=DEBUG -- Makefile
 
 
 ```
