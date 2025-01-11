@@ -17,9 +17,8 @@ A plain and simple termainl ui for exploring, monitoring, and starting tasks. Ma
 
 ## Requirements
 
-* [rust-lang](https://www.rust-lang.org/) >= 1.81.0
+* [python](https://www.python.org/) >= 3.12.8
 
-Be sure to add $HOME/.cargo/bin/ to your environment PATH variable.
 ## Supports
 
 -   Linux
